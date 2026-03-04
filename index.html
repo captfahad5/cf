@@ -1,42 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Cabin CF Live Expiry Tracker</title>
+<style>
+body { font-family: Arial; padding: 20px; margin:0; }
+input, button { padding: 4px; margin: 2px; font-size:12px; cursor:pointer; }
+
+.table-container { overflow-x:auto; }
+
+table { 
+    border-collapse: collapse; 
+    width: 100%; 
+    margin-top: 20px; 
+    table-layout: auto;
+}
+th, td { 
+    border: 1px solid #ccc; 
+    padding: 6px; 
+    text-align: center; 
+    vertical-align: middle; 
+    word-break: break-word;
+}
+th:nth-child(1), td:nth-child(1) { white-space: nowrap; } 
+th:nth-child(2), td:nth-child(2) { white-space: nowrap; } 
+th:nth-child(3), td:nth-child(3) { text-align: left; max-width: 300px; } 
+th:nth-child(7), td:nth-child(7) { 
+    text-align: left; 
+    max-width: 400px; 
+    min-width: 200px; 
+    white-space: pre-wrap; 
+}
+
+th { background: #f4f4f4; }
+
+.statusCell { font-weight: bold; }
+.rowRed { background-color: #ff4d4d; color: white; font-weight: bold; }
+.orange { background-color: #ff9933; color: white; }
+.yellow { background-color: #ffd633; }
+.green { background-color: #66cc66; color: white; }
+
+.actionBtns {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 3px;
+    white-space: nowrap;
+}
+.mailBtn { background-color: #007bff; color: white; border: none; padding: 3px 6px; }
+.trackBtn { background-color: #17a2b8; color: white; border: none; padding: 3px 6px; }
+.deleteBtn { background-color: #dc3545; color: white; border: none; padding: 3px 6px; }
+.editBtn { background-color: #ffc107; color: black; border: none; padding: 3px 6px; }
+.rieBtn { background-color: #6f42c1; color: white; border: none; padding: 3px 6px; }
+
+.exportBtn, .importBtn { background-color: #28a745; color: white; border: none; padding: 4px 8px; margin-left:3px; }
+input.trackerInput { width: 90px; font-size: 11px; padding: 2px; }
+
+.aircraftCell { cursor: pointer; color: black; text-decoration: none; font-weight: bold; }
+.aircraftCell:hover { color: #007bff; }
+#clearedTabBtn { margin-left:10px; padding:4px 8px; background:#6c757d; color:white; border:none; cursor:pointer; }
+
+/* MOBILE RESPONSIVE */
+@media(max-width: 768px){
+  input, button { font-size:10px; padding:2px; }
+  .actionBtns { flex-direction: column; gap:2px; align-items: flex-start; }
+  .trackerInput { width:70px; }
+  th, td { font-size:12px; padding:4px; }
+}
+</style>
+</head>
+<body>
+
+<h2>Cabin CF Live Expiry Tracker</h2>
+
+<h3>Add / Edit Item</h3>
+Aircraft:
+<input type="text" id="aircraft">
+Date:
+<input type="date" id="aircraftDate">
+Description:
+<input type="text" id="desc">
+Expiry Date:
+<input type="date" id="expiry">
+<button id="addBtn" onclick="addOrUpdateItem()">Add</button>
+<button class="exportBtn" onclick="exportData()">💾 Export JSON</button>
+<button class="importBtn" onclick="importData()">📂 Import JSON</button>
+<button id="clearedTabBtn" onclick="toggleClearedTab()">Cleared Entries</button>
+<input type="file" id="importFile" style="display:none" />
+
+<div class="table-container">
+<table id="cfTable">
+<tr>
+<th>Aircraft</th>
+<th>Date</th>
+<th>Description</th>
+<th>Expiry Date</th>
+<th>Days Left</th>
+<th>Status</th>
+<th>Rectification</th>
+<th>Action</th>
+</tr>
+</table>
+</div>
+
 <script>
-let items = [];
-let clearedItems = [];
+let items = JSON.parse(localStorage.getItem("cfItems")) || [];
+let clearedItems = JSON.parse(localStorage.getItem("cfClearedItems")) || [];
 let editIndex = null;
 let currentFilter = "";
 let showingCleared = false;
 
-// ------------------- Fetch JSON from GitHub -------------------
-fetch('data.json') // if in same folder; or use full raw GitHub URL
-  .then(response => {
-    if (!response.ok) throw new Error("Network response was not ok");
-    return response.json();
-  })
-  .then(data => {
-    if (data.active && data.cleared) {
-      items = data.active;
-      clearedItems = data.cleared;
-    } else if (Array.isArray(data)) {
-      items = data;
-    }
-    saveData();
-    saveClearedData();
-    renderTable();
-  })
-  .catch(err => console.warn("Could not load JSON from file:", err));
-
-// ------------------- Save to LocalStorage -------------------
+// Save
 function saveData(){ localStorage.setItem("cfItems", JSON.stringify(items)); }
 function saveClearedData(){ localStorage.setItem("cfClearedItems", JSON.stringify(clearedItems)); }
 
-// ------------------- Helper Functions -------------------
 function calculateDays(expiry){
     let today = new Date(); today.setHours(0,0,0,0);
     let expDate = new Date(expiry); expDate.setHours(0,0,0,0);
     return Math.ceil((expDate - today)/(1000*60*60*24));
 }
-function updateRectification(i,value){ items[i].rectification = value; saveData(); }
 
-// ------------------- Render Tables -------------------
+// Rectification update
+function updateRectification(i,value){
+    items[i].rectification = value;
+    saveData();
+}
+
+// Render Active Table
 function renderTable(){
     let table = document.getElementById("cfTable");
     table.innerHTML = `<tr>
@@ -44,6 +133,7 @@ function renderTable(){
     <th>Days Left</th><th>Status</th><th>Rectification</th><th>Action</th></tr>`;
 
     items.sort((a,b)=>new Date(a.expiry)-new Date(b.expiry));
+
     items.forEach((item,index)=>{
         if(currentFilter && item.aircraft!==currentFilter) return;
         let daysLeft = calculateDays(item.expiry);
@@ -80,11 +170,13 @@ function renderTable(){
     });
 }
 
+// Render Cleared Table
 function renderClearedTable(){
     let table = document.getElementById("cfTable");
     table.innerHTML = `<tr>
     <th>Aircraft</th><th>Date</th><th>Description</th><th>Expiry Date</th>
     <th>Days Left</th><th>Status</th><th>Rectification</th><th>Action</th></tr>`;
+
     clearedItems.forEach((item,index)=>{
         let daysLeft = calculateDays(item.expiry);
         let statusClass="", statusText="", rowClass="";
@@ -93,6 +185,7 @@ function renderClearedTable(){
         else if(daysLeft<=7){ statusClass="orange"; statusText="🟠 7 Days Left";}
         else if(daysLeft<=20){ statusClass="yellow"; statusText="🟡 20 Days Left";}
         else{ statusClass="green"; statusText="🟢 OK";}
+
         table.innerHTML += `<tr class="${rowClass}">
             <td>${item.aircraft}</td>
             <td>${item.aircraftDate || ''}</td>
@@ -106,17 +199,44 @@ function renderClearedTable(){
     });
 }
 
-// ------------------- Actions -------------------
-function toggleClearedTab(){ showingCleared = !showingCleared; showingCleared?renderClearedTable():renderTable(); document.getElementById("clearedTabBtn").innerText=showingCleared?"Back to Active":"Cleared Entries"; }
-function clearItem(index){ clearedItems.push(items.splice(index,1)[0]); saveData(); saveClearedData(); renderTable(); }
-function permanentDelete(index){ clearedItems.splice(index,1); saveClearedData(); renderClearedTable(); }
+// Toggle Cleared Tab
+function toggleClearedTab(){
+    showingCleared = !showingCleared;
+    if(showingCleared){
+        document.getElementById("clearedTabBtn").innerText="Back to Active";
+        renderClearedTable();
+    } else {
+        document.getElementById("clearedTabBtn").innerText="Cleared Entries";
+        renderTable();
+    }
+}
+
+// Clear Active Item
+function clearItem(index){
+    const item = items.splice(index,1)[0];
+    clearedItems.push(item);
+    saveData();
+    saveClearedData();
+    renderTable();
+}
+
+// Permanently Delete Cleared
+function permanentDelete(index){
+    clearedItems.splice(index,1);
+    saveClearedData();
+    renderClearedTable();
+}
+
+// Filter
 function filterByAircraft(ac){ currentFilter=(currentFilter===ac?"":ac); renderTable(); }
+
+// Other Actions
 function updateLink(i,v){ items[i].link=v; saveData(); }
 function openLink(v){ if(v) window.open(v,"_blank"); else alert("No tracker link added."); }
 function handleRIE(i){
     const item=items[i];
     if(item.rieImage){
-        if(confirm("RIE image exists. Replace?")) uploadRIE(i);
+        if(confirm("RIE image already exists. Replace?")) uploadRIE(i);
         else { const win=window.open(); win.document.write('<img src="'+item.rieImage+'" style="max-width:100%;max-height:100%"/>'); }
     } else uploadRIE(i);
 }
@@ -125,13 +245,13 @@ function uploadRIE(i){
     const input=document.createElement("input"); input.type="file"; input.accept="image/*";
     input.onchange=(e)=>{ const file=e.target.files[0]; if(file){
         const reader=new FileReader();
-        reader.onload=function(evt){ item.rieImage=evt.target.result; saveData(); alert("RIE uploaded!"); renderTable(); }
+        reader.onload=function(evt){ item.rieImage=evt.target.result; saveData(); alert("RIE uploaded! Click RIE to view/replace."); renderTable(); }
         reader.readAsDataURL(file);
     }}
     input.click();
 }
 
-// ------------------- Add / Edit -------------------
+// Add / Update Item
 function addOrUpdateItem(){
     let aircraft=document.getElementById("aircraft").value;
     let aircraftDate=document.getElementById("aircraftDate").value;
@@ -147,10 +267,15 @@ function addOrUpdateItem(){
     document.getElementById("expiry").value="";
 }
 function editItem(i){ let item=items[i]; document.getElementById("aircraft").value=item.aircraft; document.getElementById("aircraftDate").value=item.aircraftDate || ""; document.getElementById("desc").value=item.desc; document.getElementById("expiry").value=item.expiry; editIndex=i; document.getElementById("addBtn").innerText="Update"; }
-function generateMail(a,d,e){ const subject="Request for Hangar Parking – Cabin CF Expiry"; const body=`Dear Planning,\n\nAircraft Registration: ${a}\nItem Description: ${d}\nExpiry Date: ${e}\n\nKindly arrange hangar parking.\n\nRegards,\nCabin Maintenance`; const gmailLink="https://mail.google.com/mail/?view=cm&fs=1&to=planning@yourcompany.com&su="+encodeURIComponent(subject)+"&body="+encodeURIComponent(body); window.open(gmailLink,"_blank"); }
+function generateMail(a,d,e){
+    const subject="Request for Hangar Parking – Cabin CF Expiry";
+    const body=`Dear Planning,\n\nAircraft Registration: ${a}\nItem Description: ${d}\nExpiry Date: ${e}\n\nKindly arrange hangar parking at White Body Hangar for rectification.\nCoordination with Aircraft Furnishing Shop will be carried out accordingly.\n\nRequest your support.\n\nRegards,\nCabin Maintenance`;
+    const gmailLink="https://mail.google.com/mail/?view=cm&fs=1&to=planning@yourcompany.com&su="+encodeURIComponent(subject)+"&body="+encodeURIComponent(body);
+    window.open(gmailLink,"_blank");
+}
 function deleteItem(i){ items.splice(i,1); saveData(); renderTable(); }
 
-// ------------------- Export / Import -------------------
+// Export JSON
 function exportData(){ 
     const dataToExport = { active: items, cleared: clearedItems };
     const dataStr = JSON.stringify(dataToExport,null,2);
@@ -161,17 +286,28 @@ function exportData(){
     URL.revokeObjectURL(url);
 }
 
+// Import JSON
 const importFileInput = document.getElementById("importFile");
 importFileInput.addEventListener("change", function(){
-    const file = importFileInput.files[0]; if(!file) return;
+    const file = importFileInput.files[0];
+    if(!file) return;
     const reader = new FileReader();
     reader.onload = function(e){
         try{
             const imported = JSON.parse(e.target.result);
-            if(imported.active && imported.cleared){ items=imported.active; clearedItems=imported.cleared; }
-            else if(Array.isArray(imported)){ items=imported; }
-            else{ alert("Invalid JSON file."); return; }
-            saveData(); saveClearedData(); renderTable(); alert("Data imported successfully!"); 
+            if(imported.active && imported.cleared){
+                items = imported.active;
+                clearedItems = imported.cleared;
+                saveData();
+                saveClearedData();
+                renderTable();
+                alert("Data imported successfully!");
+            } else if(Array.isArray(imported)){
+                items = imported;
+                saveData();
+                renderTable();
+                alert("Data imported successfully! (Old format, cleared entries not included)");
+            } else alert("Invalid JSON file.");
         } catch(err){ alert("Error parsing JSON: "+err); }
     }
     reader.readAsText(file);
@@ -179,7 +315,14 @@ importFileInput.addEventListener("change", function(){
 });
 function importData(){ importFileInput.click(); }
 
-// ------------------- Auto refresh -------------------
+// Auto refresh
 setInterval(()=>{ if(!showingCleared) renderTable(); },60000);
 renderTable();
+
 </script>
+
+<div style="position: fixed; bottom: 10px; right: 10px; font-size: 12px; font-weight: bold; color: black; z-index: 9999;">
+Made By Capt Fahad | Powered by AI 💻
+</div>
+</body>
+</html>
