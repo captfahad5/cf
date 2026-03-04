@@ -103,13 +103,37 @@ Expiry Date:
 </div>
 
 <script>
-let items = JSON.parse(localStorage.getItem("cfItems")) || [];
-let clearedItems = JSON.parse(localStorage.getItem("cfClearedItems")) || [];
+let items = [];
+let clearedItems = [];
 let editIndex = null;
 let currentFilter = "";
 let showingCleared = false;
 
-// Save
+// --- Load JSON from file (fallback to localStorage if fails) ---
+function loadJSON() {
+    fetch('Cabin_CF_Tracker.json')
+    .then(res => res.json())
+    .then(data => {
+        if(data.active && data.cleared){
+            items = data.active;
+            clearedItems = data.cleared;
+        } else if(Array.isArray(data)){
+            items = data;
+            clearedItems = [];
+        } else {
+            console.error("Invalid JSON format");
+        }
+        renderTable();
+    })
+    .catch(err => {
+        console.warn("Failed to load JSON, using localStorage", err);
+        items = JSON.parse(localStorage.getItem("cfItems")) || [];
+        clearedItems = JSON.parse(localStorage.getItem("cfClearedItems")) || [];
+        renderTable();
+    });
+}
+
+// --- Save Functions ---
 function saveData(){ localStorage.setItem("cfItems", JSON.stringify(items)); }
 function saveClearedData(){ localStorage.setItem("cfClearedItems", JSON.stringify(clearedItems)); }
 
@@ -125,7 +149,7 @@ function updateRectification(i,value){
     saveData();
 }
 
-// Render Active Table
+// --- Render Active Table ---
 function renderTable(){
     let table = document.getElementById("cfTable");
     table.innerHTML = `<tr>
@@ -170,7 +194,7 @@ function renderTable(){
     });
 }
 
-// Render Cleared Table
+// --- Render Cleared Table ---
 function renderClearedTable(){
     let table = document.getElementById("cfTable");
     table.innerHTML = `<tr>
@@ -199,7 +223,7 @@ function renderClearedTable(){
     });
 }
 
-// Toggle Cleared Tab
+// --- Toggle Cleared Tab ---
 function toggleClearedTab(){
     showingCleared = !showingCleared;
     if(showingCleared){
@@ -211,7 +235,7 @@ function toggleClearedTab(){
     }
 }
 
-// Clear Active Item
+// --- Clear Active Item ---
 function clearItem(index){
     const item = items.splice(index,1)[0];
     clearedItems.push(item);
@@ -220,17 +244,17 @@ function clearItem(index){
     renderTable();
 }
 
-// Permanently Delete Cleared
+// --- Permanently Delete Cleared ---
 function permanentDelete(index){
     clearedItems.splice(index,1);
     saveClearedData();
     renderClearedTable();
 }
 
-// Filter
+// --- Filter ---
 function filterByAircraft(ac){ currentFilter=(currentFilter===ac?"":ac); renderTable(); }
 
-// Other Actions
+// --- Other Actions ---
 function updateLink(i,v){ items[i].link=v; saveData(); }
 function openLink(v){ if(v) window.open(v,"_blank"); else alert("No tracker link added."); }
 function handleRIE(i){
@@ -251,7 +275,7 @@ function uploadRIE(i){
     input.click();
 }
 
-// Add / Update Item
+// --- Add / Update Item ---
 function addOrUpdateItem(){
     let aircraft=document.getElementById("aircraft").value;
     let aircraftDate=document.getElementById("aircraftDate").value;
@@ -275,7 +299,7 @@ function generateMail(a,d,e){
 }
 function deleteItem(i){ items.splice(i,1); saveData(); renderTable(); }
 
-// Export JSON
+// --- Export JSON ---
 function exportData(){ 
     const dataToExport = { active: items, cleared: clearedItems };
     const dataStr = JSON.stringify(dataToExport,null,2);
@@ -286,7 +310,7 @@ function exportData(){
     URL.revokeObjectURL(url);
 }
 
-// Import JSON
+// --- Import JSON ---
 const importFileInput = document.getElementById("importFile");
 importFileInput.addEventListener("change", function(){
     const file = importFileInput.files[0];
@@ -315,9 +339,11 @@ importFileInput.addEventListener("change", function(){
 });
 function importData(){ importFileInput.click(); }
 
-// Auto refresh
+// --- Auto refresh ---
 setInterval(()=>{ if(!showingCleared) renderTable(); },60000);
-renderTable();
+
+// --- Load JSON on start ---
+loadJSON();
 
 </script>
 
