@@ -1,224 +1,374 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cabin CF Live Expiry Tracker</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    :root{
-      --bg-1:#f5f7fb;
-      --bg-2:#eaf1ff;
-      --card:#ffffff;
-      --ink:#152238;
-      --muted:#5c6b84;
-      --line:#d9e1ef;
-      --brand:#0a66ff;
-      --brand-2:#0b4fc6;
-      --danger:#d92d20;
-      --warn:#ef8e00;
-      --safe:#0c8f4b;
-      --radius:14px;
-      --shadow:0 10px 30px rgba(16, 42, 112, .08);
-    }
+<title>Cabin CF Live Expiry Tracker</title>
+<style>
+body { font-family: Arial; padding: 20px; }
+input, button { padding: 4px; margin: 2px; font-size:12px; cursor:pointer; }
 
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: "Manrope", sans-serif;
-      color: var(--ink);
-      background:
-        radial-gradient(circle at 10% 10%, #dbe9ff 0%, transparent 38%),
-        radial-gradient(circle at 90% 90%, #d7f0ff 0%, transparent 35%),
-        linear-gradient(180deg, var(--bg-2), var(--bg-1));
-      min-height: 100vh;
-      padding: 24px;
-    }
+table { 
+    border-collapse: collapse; 
+    width: 100%; 
+    margin-top: 20px; 
+    table-layout: auto;
+}
+th, td { 
+    border: 1px solid #ccc; 
+    padding: 6px; 
+    text-align: center; 
+    vertical-align: middle; 
+}
+th:nth-child(1), td:nth-child(1) { white-space: nowrap; } 
+th:nth-child(2), td:nth-child(2) { white-space: nowrap; } 
+th:nth-child(3), td:nth-child(3) { text-align: left; word-break: break-word; max-width: 300px; } 
+th:nth-child(7), td:nth-child(7) { 
+    text-align: left; 
+    word-break: break-word; 
+    max-width: 400px; 
+    min-width: 200px; 
+    white-space: pre-wrap; 
+}
 
-    .app {
-      max-width: 1400px;
-      margin: 0 auto;
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-    }
+th { background: #f4f4f4; }
 
-    .hero {
-      padding: 20px 22px;
-      background: linear-gradient(120deg, #0a66ff, #0f7ae5 55%, #1aa4ff);
-      color: white;
-    }
-    .hero h1 { margin: 0; font-size: 24px; font-weight: 800; }
-    .hero p { margin: 6px 0 0; opacity: .95; font-weight: 600; }
+.statusCell { font-weight: bold; }
+.rowRed { background-color: #ff4d4d; color: white; font-weight: bold; }
+.orange { background-color: #ff9933; color: white; }
+.yellow { background-color: #ffd633; }
+.green { background-color: #66cc66; color: white; }
 
-    .panel { padding: 18px 22px; border-top: 1px solid var(--line); }
+.actionBtns {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 3px;
+    white-space: nowrap;
+}
+.mailBtn { background-color: #007bff; color: white; border: none; padding: 3px 6px; }
+.trackBtn { background-color: #17a2b8; color: white; border: none; padding: 3px 6px; }
+.deleteBtn { background-color: #dc3545; color: white; border: none; padding: 3px 6px; }
+.editBtn { background-color: #ffc107; color: black; border: none; padding: 3px 6px; }
+.rieBtn { background-color: #6f42c1; color: white; border: none; padding: 3px 6px; }
 
-    .panel h3 { margin: 0 0 14px; font-size: 16px; }
+.exportBtn, .importBtn { background-color: #28a745; color: white; border: none; padding: 4px 8px; margin-left:3px; }
+input.trackerInput { width: 90px; font-size: 11px; padding: 2px; }
 
-    .form-grid {
-      display: grid;
-      grid-template-columns: 1.1fr 1fr 2fr 1fr auto;
-      gap: 10px;
-      align-items: end;
-    }
-
-    .field { display: flex; flex-direction: column; gap: 6px; }
-    .field label { font-size: 12px; color: var(--muted); font-weight: 700; }
-
-    input, button {
-      font-family: inherit;
-      font-size: 13px;
-      border-radius: 10px;
-      border: 1px solid var(--line);
-      padding: 9px 10px;
-    }
-
-    input:focus {
-      outline: none;
-      border-color: #8bb5ff;
-      box-shadow: 0 0 0 3px rgba(10,102,255,.15);
-    }
-
-    button { cursor: pointer; font-weight: 700; }
-
-    .btn-primary { background: var(--brand); color: #fff; border-color: var(--brand); }
-    .btn-primary:hover { background: var(--brand-2); }
-
-    .btn-green { background: #14944f; color: #fff; border-color: #14944f; }
-    .btn-gray { background: #4b5565; color: #fff; border-color: #4b5565; }
-
-    .top-actions{
-      display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;
-    }
-
-    .table-wrap { overflow: auto; border-top: 1px solid var(--line); }
-
-    table {
-      width: 100%;
-      border-collapse: separate;
-      border-spacing: 0;
-      min-width: 1080px;
-    }
-
-    th, td {
-      padding: 10px 8px;
-      border-bottom: 1px solid #edf1f8;
-      vertical-align: middle;
-      text-align: center;
-      font-size: 13px;
-    }
-
-    thead th, tr:first-child th {
-      position: sticky;
-      top: 0;
-      background: #f7faff;
-      color: #22324f;
-      z-index: 1;
-      border-bottom: 1px solid var(--line);
-      font-weight: 800;
-      white-space: nowrap;
-    }
-
-    td:nth-child(3), td:nth-child(7) {
-      text-align: left;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-
-    .statusCell { font-weight: 800; border-radius: 8px; }
-    .rowRed { background-color: #ffe7e5; color: #8e1a11; font-weight: 700; }
-    .orange { background-color: #fff1dc; color: #8a5200; }
-    .yellow { background-color: #fff8cf; color: #6e5a00; }
-    .green { background-color: #e4f8ec; color: #086839; }
-
-    .actionBtns {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-
-    .mailBtn,.trackBtn,.deleteBtn,.editBtn,.rieBtn,.exportBtn,.importBtn,#clearedTabBtn{
-      border:none; border-radius:8px; padding:6px 9px; font-size:12px; font-weight:700;
-    }
-    .mailBtn { background:#0a66ff; color:#fff; }
-    .trackBtn { background:#0f9eb1; color:#fff; }
-    .deleteBtn { background:#d92d20; color:#fff; }
-    .editBtn { background:#f1b800; color:#1f2430; }
-    .rieBtn { background:#1565c0; color:#fff; }
-    .exportBtn,.importBtn { background:#14944f; color:#fff; }
-    #clearedTabBtn { background:#4b5565; color:#fff; }
-
-    input.trackerInput { width: 110px; font-size: 12px; padding: 6px; }
-
-    .aircraftCell { cursor: pointer; font-weight: 800; }
-    .aircraftCell:hover { color: var(--brand); text-decoration: underline; }
-
-    @media (max-width: 980px){
-      .form-grid { grid-template-columns: 1fr 1fr; }
-      .form-grid .field:nth-child(3){ grid-column: 1 / -1; }
-    }
-  </style>
+.aircraftCell { cursor: pointer; color: black; text-decoration: none; font-weight: bold; }
+.aircraftCell:hover { color: #007bff; }
+#clearedTabBtn { margin-left:10px; padding:4px 8px; background:#6c757d; color:white; border:none; cursor:pointer; }
+</style>
 </head>
-
 <body>
-  <div class="app">
-    <div class="hero">
-      <h1>Cabin CF Live Expiry Tracker</h1>
-      <p>Made by Capt Fahad | Powered by AI</p>
-    </div>
 
-    <div class="panel">
-      <h3>Add / Edit Item</h3>
-      <div class="form-grid">
-        <div class="field">
-          <label for="aircraft">Aircraft</label>
-          <input type="text" id="aircraft" placeholder="e.g. A6-XYZ">
-        </div>
-        <div class="field">
-          <label for="aircraftDate">Date</label>
-          <input type="date" id="aircraftDate">
-        </div>
-        <div class="field">
-          <label for="desc">Description</label>
-          <input type="text" id="desc" placeholder="Item details">
-        </div>
-        <div class="field">
-          <label for="expiry">Expiry Date</label>
-          <input type="date" id="expiry">
-        </div>
-        <button id="addBtn" class="btn-primary" onclick="addOrUpdateItem()">Add</button>
-      </div>
+<h2>Cabin CF Live Expiry Tracker</h2>
+<div style="font-size: 16px; font-weight: bold; color: #007bff; margin-top: -15px; margin-bottom: 20px;">
+Made By Capt Fahad | Powered by AI 💻
+</div>
 
-      <div class="top-actions">
-        <button class="exportBtn" onclick="exportData()">Export JSON</button>
-        <button class="importBtn" onclick="importData()">Import JSON</button>
-        <button id="clearedTabBtn" onclick="toggleClearedTab()">Cleared Entries</button>
-        <input type="file" id="importFile" style="display:none" />
-      </div>
-    </div>
+<h3>Add / Edit Item</h3>
+Aircraft:
+<input type="text" id="aircraft">
+Date:
+<input type="date" id="aircraftDate">
+Description:
+<input type="text" id="desc">
+Expiry Date:
+<input type="date" id="expiry">
+<button id="addBtn" onclick="addOrUpdateItem()">Add</button>
+<button class="exportBtn" onclick="exportData()">💾 Export JSON</button>
+<button class="importBtn" onclick="importData()">📂 Import JSON</button>
+<button id="clearedTabBtn" onclick="toggleClearedTab()">Cleared Entries</button>
+<input type="file" id="importFile" style="display:none" />
 
-    <div class="table-wrap">
-      <table id="cfTable">
-        <tr>
-          <th>Aircraft</th>
-          <th>Date</th>
-          <th>Description</th>
-          <th>Expiry Date</th>
-          <th>Days Left</th>
-          <th>Status</th>
-          <th>Rectification</th>
-          <th>Action</th>
-        </tr>
-      </table>
-    </div>
-  </div>
+<table id="cfTable">
+<tr>
+<th>Aircraft</th>
+<th>Date</th>
+<th>Description</th>
+<th>Expiry Date</th>
+<th>Days Left</th>
+<th>Status</th>
+<th>Rectification</th>
+<th>Action</th>
+</tr>
+</table>
 
-  <!-- keep your existing Firebase scripts + JS logic below -->
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
+
+<script>
+// Firebase Configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyDQEwq76yLe8bv7Pc4ATjIGq_uwX1idQto",
+  authDomain: "cabin-cf-tracker.firebaseapp.com",
+  projectId: "cabin-cf-tracker",
+  storageBucket: "cabin-cf-tracker.firebasestorage.app",
+  messagingSenderId: "533581915976",
+  appId: "1:533581915976:web:c48d482403fded6fd2b57d"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// Firestore collections
+const itemsCol = db.collection('cfItems');
+const clearedCol = db.collection('cfClearedItems');
+
+let items = [];
+let clearedItems = [];
+let editId = null;
+let currentFilter = "";
+let showingCleared = false;
+
+// Listen to Active Items
+itemsCol.onSnapshot(snapshot => {
+    items = [];
+    snapshot.forEach(doc => {
+        items.push({ id: doc.id, ...doc.data() });
+    });
+    if(!showingCleared) renderTable();
+});
+
+// Listen to Cleared Items
+clearedCol.onSnapshot(snapshot => {
+    clearedItems = [];
+    snapshot.forEach(doc => {
+        clearedItems.push({ id: doc.id, ...doc.data() });
+    });
+    if(showingCleared) renderClearedTable();
+});
+
+function calculateDays(expiry){
+    let today = new Date(); today.setHours(0,0,0,0);
+    let expDate = new Date(expiry); expDate.setHours(0,0,0,0);
+    return Math.ceil((expDate - today)/(1000*60*60*24));
+}
+
+// Rectification update (Changed from oninput to onblur to prevent spamming Firebase writes)
+function updateRectification(i,value){
+    let item = items[i];
+    itemsCol.doc(item.id).update({ rectification: value });
+}
+
+// Render Active Table
+function renderTable(){
+    let table = document.getElementById("cfTable");
+    table.innerHTML = `<tr>
+    <th>Aircraft</th><th>Date</th><th>Description</th><th>Expiry Date</th>
+    <th>Days Left</th><th>Status</th><th>Rectification</th><th>Action</th></tr>`;
+
+    items.sort((a,b)=>new Date(a.expiry)-new Date(b.expiry));
+
+    items.forEach((item,index)=>{
+        if(currentFilter && item.aircraft!==currentFilter) return;
+        let daysLeft = calculateDays(item.expiry);
+        let statusClass="", statusText="", actionBtn="", rowClass="";
+        if(daysLeft<0){ rowClass="rowRed"; statusText="🔴 Expired"; actionBtn=`<button class="mailBtn" onclick="generateMail('${item.aircraft}','${item.desc}','${item.expiry}')">Mail</button>`;}
+        else if(daysLeft<=4){ rowClass="rowRed"; statusText="🔴 Critical (≤4 Days)"; actionBtn=`<button class="mailBtn" onclick="generateMail('${item.aircraft}','${item.desc}','${item.expiry}')">Mail</button>`;}
+        else if(daysLeft<=7){ statusClass="orange"; statusText="🟠 7 Days Left"; actionBtn=`<button class="mailBtn" onclick="generateMail('${item.aircraft}','${item.desc}','${item.expiry}')">Mail</button>`;}
+        else if(daysLeft<=20){ statusClass="yellow"; statusText="🟡 20 Days Left";}
+        else{ statusClass="green"; statusText="🟢 OK";}
+
+        table.innerHTML += `<tr class="${rowClass}">
+            <td class="aircraftCell" onclick="filterByAircraft('${item.aircraft}')">${item.aircraft}</td>
+            <td>${item.aircraftDate || ''}</td>
+            <td>${item.desc}</td>
+            <td>${item.expiry}</td>
+            <td>${daysLeft}</td>
+            <td class="statusCell ${statusClass}">${statusText}</td>
+            <td contenteditable="true" onblur="updateRectification(${index}, this.innerText)" style="white-space: pre-wrap; text-align:left; max-width:400px; min-width:200px;">${item.rectification || ''}</td>
+            <td>
+                <div class="actionBtns">
+                    ${actionBtn || ''}
+                    <button class="editBtn" onclick="editItem(${index})">Edit</button>
+                    <button class="deleteBtn" onclick="clearItem(${index})">X</button>
+                    <div style="margin-left:auto; display:flex; gap:3px; align-items:center;">
+                        <input type="text" class="trackerInput" id="link_${index}" value="${item.link || ''}" placeholder="Tracker" onchange="updateLink(${index}, this.value)">
+                        <button class="trackBtn" onclick="openLink(document.getElementById('link_${index}').value)">Track</button>
+                        <button class="rieBtn" onclick="handleRIE(${index})">RIE</button>
+                    </div>
+                </div>
+            </td>
+        </tr>`;
+    });
+}
+
+// Render Cleared Table
+function renderClearedTable(){
+    let table = document.getElementById("cfTable");
+    table.innerHTML = `<tr>
+    <th>Aircraft</th><th>Date</th><th>Description</th><th>Expiry Date</th>
+    <th>Days Left</th><th>Status</th><th>Rectification</th><th>Action</th></tr>`;
+
+    clearedItems.sort((a,b)=>new Date(a.expiry)-new Date(b.expiry));
+
+    clearedItems.forEach((item,index)=>{
+        let daysLeft = calculateDays(item.expiry);
+        let statusClass="", statusText="", rowClass="";
+        if(daysLeft<0){ rowClass="rowRed"; statusText="🔴 Expired";}
+        else if(daysLeft<=4){ rowClass="rowRed"; statusText="🔴 Critical (≤4 Days)";}
+        else if(daysLeft<=7){ statusClass="orange"; statusText="🟠 7 Days Left";}
+        else if(daysLeft<=20){ statusClass="yellow"; statusText="🟡 20 Days Left";}
+        else{ statusClass="green"; statusText="🟢 OK";}
+
+        table.innerHTML += `<tr class="${rowClass}">
+            <td>${item.aircraft}</td>
+            <td>${item.aircraftDate || ''}</td>
+            <td>${item.desc}</td>
+            <td>${item.expiry}</td>
+            <td>${daysLeft}</td>
+            <td class="statusCell ${statusClass}">${statusText}</td>
+            <td>${item.rectification || ''}</td>
+            <td><button class="deleteBtn" onclick="permanentDelete(${index})">Delete Permanently</button></td>
+        </tr>`;
+    });
+}
+
+// Toggle Cleared Tab
+function toggleClearedTab(){
+    showingCleared = !showingCleared;
+    if(showingCleared){
+        document.getElementById("clearedTabBtn").innerText="Back to Active";
+        renderClearedTable();
+    } else {
+        document.getElementById("clearedTabBtn").innerText="Cleared Entries";
+        renderTable();
+    }
+}
+
+// Clear Active Item
+function clearItem(index){
+    const item = items[index];
+    let data = {...item};
+    delete data.id; // remove id before creating new document
+    clearedCol.add(data).then(() => {
+        itemsCol.doc(item.id).delete();
+    });
+}
+
+// Permanently Delete Cleared
+function permanentDelete(index){
+    clearedCol.doc(clearedItems[index].id).delete();
+}
+
+// Filter
+function filterByAircraft(ac){ currentFilter=(currentFilter===ac?"":ac); if(!showingCleared) renderTable(); }
+
+// Other Actions
+function updateLink(i,v){ itemsCol.doc(items[i].id).update({ link: v }); }
+function openLink(v){ if(v) window.open(v,"_blank"); else alert("No tracker link added."); }
+function handleRIE(i){
+    const item=items[i];
+    if(item.rieImage){
+        if(confirm("RIE image already exists. Replace?")) uploadRIE(i);
+        else { const win=window.open(); win.document.write('<img src="'+item.rieImage+'" style="max-width:100%;max-height:100%"/>'); }
+    } else uploadRIE(i);
+}
+function uploadRIE(i){
+    const item=items[i];
+    const input=document.createElement("input"); input.type="file"; input.accept="image/*";
+    input.onchange=(e)=>{ const file=e.target.files[0]; if(file){
+        const reader=new FileReader();
+        reader.onload=function(evt){ 
+            itemsCol.doc(item.id).update({ rieImage: evt.target.result }).then(() => {
+                alert("RIE uploaded! Click RIE to view/replace."); 
+            }).catch(err => {
+                alert("Error uploading image: " + err.message);
+            });
+        }
+        reader.readAsDataURL(file);
+    }}
+    input.click();
+}
+
+// Add / Update Item
+function addOrUpdateItem(){
+    let aircraft=document.getElementById("aircraft").value;
+    let aircraftDate=document.getElementById("aircraftDate").value;
+    let desc=document.getElementById("desc").value;
+    let expiry=document.getElementById("expiry").value;
+    if(!aircraft || !desc || !expiry){ alert("Please fill all fields"); return; }
+    
+    if(editId!==null){ 
+        itemsCol.doc(editId).update({ aircraft, aircraftDate, desc, expiry });
+        editId=null; 
+        document.getElementById("addBtn").innerText="Add"; 
+    }
+    else {
+        itemsCol.add({aircraft, aircraftDate, desc, expiry, link:"", rieImage:"", rectification:""});
+    }
+    
+    document.getElementById("aircraft").value=""; 
+    document.getElementById("aircraftDate").value="";
+    document.getElementById("desc").value=""; 
+    document.getElementById("expiry").value="";
+}
+function editItem(i){ 
+    let item=items[i]; 
+    document.getElementById("aircraft").value=item.aircraft; 
+    document.getElementById("aircraftDate").value=item.aircraftDate || ""; 
+    document.getElementById("desc").value=item.desc; 
+    document.getElementById("expiry").value=item.expiry; 
+    editId=item.id; 
+    document.getElementById("addBtn").innerText="Update";
+}
+function generateMail(a,d,e){
+    const subject="Request for Hangar Parking – Cabin CF Expiry";
+    const body=`Dear Planning,\n\nAircraft Registration: ${a}\nItem Description: ${d}\nExpiry Date: ${e}\n\nKindly arrange hangar parking at White Body Hangar for rectification.\nCoordination with Aircraft Furnishing Shop will be carried out accordingly.\n\nRequest your support.\n\nRegards,\nCabin Maintenance`;
+    const gmailLink="https://mail.google.com/mail/?view=cm&fs=1&to=planning@yourcompany.com&su="+encodeURIComponent(subject)+"&body="+encodeURIComponent(body);
+    window.open(gmailLink,"_blank");
+}
+
+// Export
+function exportData(){ 
+    const dataToExport = { active: items, cleared: clearedItems };
+    const dataStr = JSON.stringify(dataToExport,null,2);
+    const blob = new Blob([dataStr],{type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href = url; a.download = "Cabin_CF_Tracker.json"; a.click();
+    URL.revokeObjectURL(url);
+}
+
+// Import
+const importFileInput = document.getElementById("importFile");
+importFileInput.addEventListener("change", async function(){
+    const file = importFileInput.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = async function(e){
+        try{
+            const imported = JSON.parse(e.target.result);
+            if(!confirm("This will import your JSON file into the LIVE Firebase database. Are you sure?")) {
+                importFileInput.value = "";
+                return;
+            }
+            
+            let toImportActive = imported.active || (Array.isArray(imported) ? imported : []);
+            let toImportCleared = imported.cleared || [];
+            
+            for(let item of toImportActive) {
+                let data = {...item};
+                delete data.id; // remove id so we gen a new fresh one
+                await itemsCol.add(data);
+            }
+            for(let item of toImportCleared) {
+                let data = {...item};
+                delete data.id;
+                await clearedCol.add(data);
+            }
+            
+            alert("Data imported successfully to Firebase!");
+            importFileInput.value = "";
+        } catch(err){ alert("Error parsing JSON: "+err); }
+    }
+    reader.readAsText(file);
+});
+function importData(){ importFileInput.click(); }
+
+</script>
+
 </body>
 </html>
